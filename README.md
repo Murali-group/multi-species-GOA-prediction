@@ -26,12 +26,11 @@ conda install -c bioconda bioconductor-clusterprofiler
 ## Download Datasets
 The networks and GO term annotations for the 200 bacterial species with the most EXPC and COMP annotations are available here: http://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/
 
+## Run the Pipeline
+This script requires a config file specific to the [annotation_prediction pipeline](https://github.com/Murali-group/annotation-prediction), with a few additional options set.
 
-#### Plot
-After CV has finished, to visualize the results, use the `plot.py` script. For example:
-```
-python plot.py --config config.yaml --box --measure fmax
-```
+> Note that the annotation_prediction code was added as a [git-subrepo](https://github.com/ingydotnet/git-subrepo), so to make changes to that code, please commit them to that repository directly, and then pull them with `git subrepo pull src/annotation_prediction/`, or follow the suggestions in the git-subrepo documentation.
+
 
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
