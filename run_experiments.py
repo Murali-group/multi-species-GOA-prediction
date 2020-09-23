@@ -14,33 +14,22 @@ from collections import defaultdict
 # for some reason, the current directory isn't always in the path. this fixes that
 if "" not in sys.path:
     sys.path.insert(0,"")
-from FastSinkSource import run_eval_algs
-from FastSinkSource.src.evaluate import eval_leave_one_species_out as eval_loso
-from FastSinkSource.src.evaluate import eval_utils as eval_utils
-from FastSinkSource.src import setup_sparse_networks as setup
-from FastSinkSource.src.algorithms import runner as runner
-#import FastSinkSource.src.go_term_prediction_examples.go_term_prediction_examples as go_examples
-#import FastSinkSource.src.algorithms.aptrank_birgrank.run_birgrank as run_birgrank
-import FastSinkSource.src.utils.file_utils as utils
-import FastSinkSource.src.utils.ontology_utils as go_utils
-import FastSinkSource.src.algorithms.alg_utils as alg_utils
+from src.annotation_prediction.src import main as run_eval_algs
+from src.annotation_prediction.src.evaluate import eval_leave_one_species_out as eval_loso
+from src.annotation_prediction.src.evaluate import eval_utils as eval_utils
+from src.annotation_prediction.src import setup_sparse_networks as setup
+from src.annotation_prediction.src.algorithms import runner as runner
+#import src.annotation_prediction.src.go_term_prediction_examples.go_term_prediction_examples as go_examples
+#import src.annotation_prediction.src.algorithms.aptrank_birgrank.run_birgrank as run_birgrank
+import src.annotation_prediction.src.utils.config_utils as config_utils
+import src.annotation_prediction.src.utils.file_utils as utils
+import src.annotation_prediction.src.utils.ontology_utils as go_utils
+import src.annotation_prediction.src.algorithms.alg_utils as alg_utils
 
 
 def main(config_map, **kwargs):
-    input_settings = config_map['input_settings']
-    input_dir = input_settings['input_dir']
-    alg_settings = config_map['algs']
-    algs = run_eval_algs.get_algs_to_run(alg_settings)
-    output_settings = config_map['output_settings']
-    postfix = kwargs.get("postfix")
-    # combine the evaluation settings in the config file and the kwargs
-    kwargs.update(config_map['eval_settings'])
-    # if specified, use this postfix, meaning overwrite the postfix from the yaml file
-    if postfix is not None:
-        kwargs['postfix'] = postfix
-    # otherwise use the default empty string
-    elif kwargs.get('postfix') is None:
-        kwargs['postfix'] = ""
+    input_settings, input_dir, output_dir, alg_settings, kwargs \
+        = config_utils.setup_config_variables(config_map, **kwargs)
 
     for dataset in input_settings['datasets']:
         kwargs = apply_dataset_settings_to_kwargs(dataset, **kwargs)
@@ -49,7 +38,7 @@ def main(config_map, **kwargs):
         #print(kwargs)
         net_obj, ann_obj, eval_ann_obj = run_eval_algs.setup_dataset(dataset, input_dir, alg_settings, **kwargs) 
         # if there are no annotations, then skip this dataset
-        if len(ann_obj.goids) == 0:
+        if len(ann_obj.terms) == 0:
             print("No terms found. Skipping this dataset")
             continue
 
@@ -79,7 +68,7 @@ def main(config_map, **kwargs):
                 eval_ann_obj = rem_neg_neighbors(net_obj, eval_ann_obj)
         # the outputs will follow this structure:
         # outputs/<net_version>/<exp_name>/<alg_name>/output_files
-        out_dir = "%s/%s/%s/" % (output_settings['output_dir'], dataset['net_version'], dataset['exp_name'])
+        out_dir = "%s/%s/%s/" % (output_dir, dataset['net_version'], dataset['exp_name'])
         alg_runners = run_eval_algs.setup_runners(alg_settings, net_obj, ann_obj, out_dir, **kwargs)
 
         # If computing the smin, compute the information content here
@@ -93,9 +82,9 @@ def main(config_map, **kwargs):
             term_ic_vec = eval_utils.compute_information_content(eval_ann_obj)
             # need to align the term_ic_vec to the ann_obj
             mapped_term_ic_vec = np.zeros(ann_obj.ann_matrix.shape[0])
-            for i, t in enumerate(eval_ann_obj.goids):
-                if t in ann_obj.goid2idx:
-                    mapped_term_ic_vec[ann_obj.goid2idx[t]] = term_ic_vec[i]
+            for i, t in enumerate(eval_ann_obj.terms):
+                if t in ann_obj.term2idx:
+                    mapped_term_ic_vec[ann_obj.term2idx[t]] = term_ic_vec[i]
             term_ic_vec = mapped_term_ic_vec
             # now make sure the shape matches the other term_ic_vec
             term_ic_vec = term_ic_vec.reshape(len(term_ic_vec), 1)
@@ -236,13 +225,13 @@ def run_eval_target_sp(
     For example, compute scores with the EXPC core, and evaluate the species with COMP and no EXPC
     """
     # the annotations were alread limited to the core species
-    core_ann_mat, goids = core_ann_obj.ann_matrix, core_ann_obj.goids
-    eval_goids = eval_ann_obj.goids
+    core_ann_mat, terms = core_ann_obj.ann_matrix, core_ann_obj.terms
+    eval_terms = eval_ann_obj.terms
     # get the test ann mat to evaluate and figure out which terms to run
     diag = sp.diags(target_taxon_prots)
     eval_ann_obj.ann_matrix = eval_ann_obj.ann_matrix.dot(diag)
     # need to re-align the test ann mat (e.g., COMP) so it matches the core ann matrix (e.g., EXPC)
-    eval_ann_obj.reshape_to_terms(goids, core_ann_obj.dag_matrix)
+    eval_ann_obj.reshape_to_terms(terms, core_ann_obj.dag_matrix)
     test_ann_mat = eval_ann_obj.ann_matrix
     # now figure out how many terms pass the # ann cutoffs
     # it will be split per taxon later
@@ -250,13 +239,13 @@ def run_eval_target_sp(
     num_test_pos_per_term = (test_ann_mat > 0).sum(axis=1)
     num_test_cutoff = kwargs['num_test_cutoff']
     terms_to_run = []
-    for i, goid in enumerate(goids):
+    for i, term in enumerate(terms):
         if num_train_pos_per_term[i] < num_test_cutoff or \
            num_test_pos_per_term[i] < num_test_cutoff:
             continue
-        terms_to_run.append(goid)
+        terms_to_run.append(term)
     print("\t%d with >= %d annotations among the %d core and %d eval terms " % (
-        len(terms_to_run), num_test_cutoff, len(goids), len(eval_goids)))
+        len(terms_to_run), num_test_cutoff, len(terms), len(eval_terms)))
 
     if kwargs.get('sp_leaf_terms_only'):
         # limit the terms to only the most specific per species
@@ -351,7 +340,7 @@ def connect_target_species_run_eval(
         net_obj, core_ann_obj, **kwargs)
     num_nodes, num_edges = print_net_stats(
         net_obj.W, train_mat, test_mat,
-        term_idx=[core_ann_obj.goid2idx[t] for t in terms_to_run])
+        term_idx=[core_ann_obj.term2idx[t] for t in terms_to_run])
     params_results['core_target_num_nodes|edges'] = "%d|%d" % (num_nodes, num_edges)
     if orig_net_obj.weight_swsn:
         params_results['swsn_time'] += net_obj.swsn_time
@@ -367,10 +356,10 @@ def connect_target_species_run_eval(
         print("%d pos, %d neg" % (len((train_mat > 0).data), len((train_mat < 0).data)))
 
         # limit the run_obj to run on the terms for which there are annotations
-        run_obj.goids_to_run = terms_to_run
-        if kwargs.get('goterm') is not None:
+        run_obj.terms_to_run = terms_to_run
+        if kwargs.get('term') is not None:
             # if a subset of terms are specified, only run those
-            run_obj.goids_to_run = kwargs['goterm']
+            run_obj.terms_to_run = kwargs['term']
 
         # sum the boolean of the columns, then use nonzero to get the columns with a nonzero value
         nodes_to_eval = (test_mat != 0).sum(axis=0).nonzero()[1]
@@ -405,7 +394,7 @@ def connect_target_species_run_eval(
             terms_to_eval = eval_taxon(t, run_obj, eval_ann_obj, terms_to_run, out_file, **kwargs) 
 
         if kwargs['compute_smin']:
-            run_obj.all_pos_neg_scores += eval_utils.store_pos_neg_scores(run_obj.goid_scores, test_mat)
+            run_obj.all_pos_neg_scores += eval_utils.store_pos_neg_scores(run_obj.term_scores, test_mat)
             eval_utils.store_terms_eval_mat(run_obj, eval_ann_obj, test_mat, specific_terms=terms_to_run) 
 
     return params_results
@@ -413,13 +402,13 @@ def connect_target_species_run_eval(
 
 def get_terms_to_eval(
         t, alg, eval_ann_obj, num_test_cutoff=10, alg_taxon_terms_to_skip=None, **kwargs):
-    test_mat, goids = eval_ann_obj.ann_matrix, eval_ann_obj.goids
+    test_mat, terms = eval_ann_obj.ann_matrix, eval_ann_obj.terms
     # and only evaluate terms that have at least 10 ann
     num_test_pos_per_term = (test_mat > 0).sum(axis=1)
-    terms_to_eval = [goid for i, goid in enumerate(goids) \
+    terms_to_eval = [term for i, term in enumerate(terms) \
                         if num_test_pos_per_term[i] >= num_test_cutoff]
     print("\t%d/%d terms with >= %d annotations for taxon %s" % (
-        len(terms_to_eval), len(goids), num_test_cutoff, t))
+        len(terms_to_eval), len(terms), num_test_cutoff, t))
     if t in alg_taxon_terms_to_skip[alg]:  
         terms_to_skip = alg_taxon_terms_to_skip[alg][t]
         terms_to_eval = [term for term in terms_to_eval if term not in terms_to_skip]
@@ -443,7 +432,7 @@ def compute_core_scores_then_transfer(
         train_mat, target_taxon_prots, core_net_obj, core_ann_obj, **kwargs)
     num_nodes, num_edges = print_net_stats(
         core_net_obj.W, train_mat, test_mat,
-        term_idx=[core_ann_obj.goid2idx[t] for t in terms_to_run])
+        term_idx=[core_ann_obj.term2idx[t] for t in terms_to_run])
     params_results['core_num_nodes|edges'] = "%d|%d" % (num_nodes, num_edges)
     if orig_net_obj.weight_swsn:
         params_results['swsn_time'] += core_net_obj.swsn_time
@@ -460,10 +449,10 @@ def compute_core_scores_then_transfer(
         print("%d pos, %d neg" % (len((train_mat > 0).data), len((train_mat < 0).data)))
 
         # limit the run_obj to run on the terms for which there are annotations
-        run_obj.goids_to_run = terms_to_run
-        if kwargs.get('goterm') is not None:
+        run_obj.terms_to_run = terms_to_run
+        if kwargs.get('term') is not None:
             # if a subset of terms are specified, only run those
-            run_obj.goids_to_run = kwargs['goterm']
+            run_obj.terms_to_run = kwargs['term']
         # limit the scores stored to the core 
         core_taxon_prot_idx = np.where(core_taxon_prots)[0]
         run_obj.target_prots = core_taxon_prot_idx
@@ -491,7 +480,7 @@ def compute_core_scores_then_transfer(
             # but they got a score of 0. Since most of the nodes in the target have a negative score,
             # this put unreachable left-out negative examples at a much higher score.
             # This function fixes that bug by setting the unknown examples to k in the target species
-            run_obj.goid_scores = fix_gm_default(run_obj, target_taxon_prots)
+            run_obj.term_scores = fix_gm_default(run_obj, target_taxon_prots)
 
         # finally, evaluate each sp-taxon pair
         out_file = "%s/loso%s%s.txt" % (
@@ -512,7 +501,7 @@ def compute_core_scores_then_transfer(
             terms_to_eval = eval_taxon(t, run_obj, eval_ann_obj, terms_to_run, out_file, **kwargs) 
 
         if kwargs['compute_smin']:
-            run_obj.all_pos_neg_scores += eval_utils.store_pos_neg_scores(run_obj.goid_scores, test_mat)
+            run_obj.all_pos_neg_scores += eval_utils.store_pos_neg_scores(run_obj.term_scores, test_mat)
             eval_utils.store_terms_eval_mat(run_obj, eval_ann_obj, test_mat, specific_terms=terms_to_run) 
 
     return params_results
@@ -524,18 +513,18 @@ def get_taxon_eval_ann_obj(t, eval_ann_obj, **kwargs):
     diag = sp.diags(taxon_prots)
     test_mat = eval_ann_obj.ann_matrix.dot(diag)
     taxon_eval_obj = setup.Sparse_Annotations(
-        eval_ann_obj.dag_matrix, test_mat, eval_ann_obj.goids, eval_ann_obj.prots)
+        eval_ann_obj.dag_matrix, test_mat, eval_ann_obj.terms, eval_ann_obj.prots)
     return taxon_eval_obj
 
 
 def eval_taxon(t, run_obj, eval_ann_obj, terms_to_run, out_file, **kwargs):
     taxon_eval_obj = get_taxon_eval_ann_obj(t, eval_ann_obj, **kwargs)
     # also limit the scores to the current taxon to make processing faster
-    all_scores = run_obj.goid_scores
+    all_scores = run_obj.term_scores
     taxon_prots = get_taxon_prots(len(eval_ann_obj.prots), [t], kwargs['species_to_uniprot_idx']) 
     diag = sp.diags(taxon_prots)
     taxon_scores = all_scores.dot(diag)
-    run_obj.goid_scores = taxon_scores 
+    run_obj.term_scores = taxon_scores 
 
     # and only evaluate terms that have at least 10 ann in the target species
     terms_to_eval = get_terms_to_eval(
@@ -543,27 +532,27 @@ def eval_taxon(t, run_obj, eval_ann_obj, terms_to_run, out_file, **kwargs):
     terms_to_eval = set(terms_to_run) & set(terms_to_eval)
     if len(terms_to_eval) == 0:
         return
-    run_obj.goids_to_run = terms_to_eval
+    run_obj.terms_to_run = terms_to_eval
 
     eval_utils.evaluate_ground_truth(
         run_obj, taxon_eval_obj, out_file,
         taxon=t, append=True, **kwargs)
 
-    run_obj.goid_scores = all_scores
+    run_obj.term_scores = all_scores
     return terms_to_eval
 
 
 def run_ssn_local(run_obj, core_to_target_ssn):
     print("Running local to transfer the computed scores to the target species using the SSN edges")
     P = alg_utils.normalizeGraphEdgeWeights(core_to_target_ssn)
-    run_obj.goid_scores = run_obj.goid_scores.tocsr() 
-    print("\t%d total gene-term pairs with scores before" % len(run_obj.goid_scores.data))
+    run_obj.term_scores = run_obj.term_scores.tocsr() 
+    print("\t%d total gene-term pairs with scores before" % len(run_obj.term_scores.data))
 
     start_wall_time = time.time()
     start_process_time = time.process_time()
-    # multiply the entire goid_scores matrix with P, the ssn, to get the new scores
-    run_obj.goid_scores = P.dot(run_obj.goid_scores.T).T
-    print("\t%d total gene-term pairs with scores after" % len(run_obj.goid_scores.data))
+    # multiply the entire term_scores matrix with P, the ssn, to get the new scores
+    run_obj.term_scores = P.dot(run_obj.term_scores.T).T
+    print("\t%d total gene-term pairs with scores after" % len(run_obj.term_scores.data))
 
     # and store the times
     wall_time = time.time() - start_wall_time
@@ -601,48 +590,48 @@ def run_loso_eval(
         if kwargs.get('verbose'):
             utils.print_memory_usage()
         # split the annotation matrix into testing (the annotations of this taxon) and training (all other annotations)
-        # sp_goterms are the goterms for this species that pass the annotation cutoffs
+        # sp_terms are the terms for this species that pass the annotation cutoffs
         taxon_prot_idx = list(kwargs['species_to_uniprot_idx'][t])
         taxon_prots = get_taxon_prots(len(net_obj.nodes), [t], kwargs['species_to_uniprot_idx'])
         if kwargs.get('keep_ann'):
             # this function checks every term for overlap between the train and test annotations (super slow)
             # which is really only needed if there could be overlap (e.g., keeping all EXPC annotations and evaluating all COMP)
-            train_ann_mat, test_ann_mat, sp_goterms = eval_loso.leave_out_taxon(
+            train_ann_mat, test_ann_mat, sp_terms = eval_loso.leave_out_taxon(
                 t, ann_obj, kwargs['species_to_uniprot_idx'],
                 eval_ann_obj=eval_ann_obj, **kwargs)
         else:
             # split the annotation matrix (and eval ann mat) into train and test.
             # Don't need to worry about overlap since the train prots and test prots are disjoint
-            train_ann_mat, test_ann_mat, sp_goterms = eval_loso.split_ann_mat_train_test(
+            train_ann_mat, test_ann_mat, sp_terms = eval_loso.split_ann_mat_train_test(
                 taxon_prots, ann_obj, eval_ann_obj=eval_ann_obj, **kwargs)
         if kwargs.get('verbose'):
             utils.print_memory_usage()
 
-        tqdm.write("\t%d/%d goterms with >= %d annotations" % (len(sp_goterms), len(ann_obj.goids), kwargs['num_test_cutoff']))
-        if len(sp_goterms) == 0:
+        tqdm.write("\t%d/%d terms with >= %d annotations" % (len(sp_terms), len(ann_obj.terms), kwargs['num_test_cutoff']))
+        if len(sp_terms) == 0:
             tqdm.write("\tskipping")
             continue
         # subset the terms if we want only the most specific species-term pairs
         if kwargs.get('sp_leaf_terms_only'):
-            leaf_terms = go_utils.get_most_specific_terms(sp_goterms, ann_obj=ann_obj)
-            print("\t'sp_leaf_terms_only': %d/%d terms are most specific, or leaf terms" % (len(leaf_terms), len(sp_goterms)))
-            sp_goterms = leaf_terms 
+            leaf_terms = go_utils.get_most_specific_terms(sp_terms, ann_obj=ann_obj)
+            print("\t'sp_leaf_terms_only': %d/%d terms are most specific, or leaf terms" % (len(leaf_terms), len(sp_terms)))
+            sp_terms = leaf_terms 
 
         # before weighting the networks, make sure at least one algorithms haven't already been run on these species term pairs
         if not kwargs.get('stats_only'): 
             terms_to_run = set()
             for run_obj in alg_runners:
                 if t in kwargs['alg_taxon_terms_to_skip'][run_obj.name]:  
-                    terms_to_run.update(set(sp_goterms) - set(kwargs['alg_taxon_terms_to_skip'][run_obj.name][t]))
+                    terms_to_run.update(set(sp_terms) - set(kwargs['alg_taxon_terms_to_skip'][run_obj.name][t]))
                 else:
                     # this alg hasn't been run yet
-                    terms_to_run.update(set(sp_goterms))
+                    terms_to_run.update(set(sp_terms))
             if len(terms_to_run) == 0:
                 tqdm.write("\t0 terms to run. Either no algs were specified, or the terms are in the output file already. skipping")
                 continue
             # if we're computing the smin, we need to make sure to run all terms
             elif kwargs.get('compute_smin'):
-                terms_to_run = sp_goterms
+                terms_to_run = sp_terms
 
         # now subset the network(s) and weight them accordingly
         pos_train_ann = (train_ann_mat > 0).astype(int)
@@ -663,7 +652,7 @@ def run_loso_eval(
         if kwargs.get('oracle_weights'):
             tqdm.write("Using the target taxon's annotations to weight the network")
             curr_ann_mat = test_ann_mat
-        ann_obj.goids_to_run = terms_to_run if not kwargs.get('stats_only') else ann_obj.goids
+        ann_obj.terms_to_run = terms_to_run if not kwargs.get('stats_only') else ann_obj.terms
         if kwargs.get('ssn_core_to_target_local'):
             new_net_obj, ssn_net_obj = apply_net_comb_filters(
                     curr_ann_mat, taxon_prots, new_net_obj, ann_obj, **kwargs)
@@ -674,7 +663,7 @@ def run_loso_eval(
         if not net_obj.weight_gmw:
             num_nodes, num_edges = print_net_stats(
                 new_net_obj.W, train_ann_mat, test_ann_mat,
-                term_idx=[ann_obj.goid2idx[t] for t in sp_goterms])
+                term_idx=[ann_obj.term2idx[t] for t in sp_terms])
             params_results['%s_num_nodes|edges'%t] = "%d|%d" % (num_nodes, num_edges)
             if net_obj.weight_swsn:
                 params_results['swsn_time'] += new_net_obj.swsn_time
@@ -696,22 +685,22 @@ def run_loso_eval(
             if t in kwargs['alg_taxon_terms_to_skip'][alg] \
                     and not run_obj.kwargs.get('debug_scores'):  
                 terms_to_skip = kwargs['alg_taxon_terms_to_skip'][alg][t]
-                sp_goterms = [term for term in sp_goterms if term not in terms_to_skip]
-                tqdm.write("\t%d to run that aren't in the output file yet." % (len(sp_goterms)))
-                if len(sp_goterms) == 0:
+                sp_terms = [term for term in sp_terms if term not in terms_to_skip]
+                tqdm.write("\t%d to run that aren't in the output file yet." % (len(sp_terms)))
+                if len(sp_terms) == 0:
                     continue
-            if kwargs.get('goterm') is not None:
+            if kwargs.get('term') is not None:
                 # if a subset of terms are specified, only run those
-                print("\tspecified terms: %s" % (', '.join(kwargs['goterm'])))
+                print("\tspecified terms: %s" % (', '.join(kwargs['term'])))
                 print("\t%d/%d specified terms overlap with the %d terms for this taxon" % (
-                        len(set(sp_goterms) & set(kwargs['goterm'])),
-                        len(kwargs['goterm']), len(sp_goterms)))
-                sp_goterms = list(set(sp_goterms) & set(kwargs['goterm']))
-                if len(sp_goterms) == 0:
+                        len(set(sp_terms) & set(kwargs['term'])),
+                        len(kwargs['term']), len(sp_terms)))
+                sp_terms = list(set(sp_terms) & set(kwargs['term']))
+                if len(sp_terms) == 0:
                     print("\tskipping")
                     continue
             # limit the run_obj to run on the terms for which there are annotations
-            run_obj.goids_to_run = sp_goterms
+            run_obj.terms_to_run = sp_terms
             # limit the scores stored to the current taxon's prots
             run_obj.target_prots = taxon_prot_idx
 
@@ -729,7 +718,7 @@ def run_loso_eval(
                     run_obj.name, run_obj.net_obj, run_obj.ann_obj,
                     run_obj.out_dir, run_obj.params, **run_obj.kwargs)
                 new_run_obj.ssn_net_obj = ssn_net_obj
-                new_run_obj.goids_to_run = sp_goterms
+                new_run_obj.terms_to_run = sp_terms
                 new_run_obj.out_dir = run_obj.out_dir
                 new_run_obj.params_results = run_obj.params_results
                 # keep the scores of only the nodes in the core species when running so that they can be transferred
@@ -782,25 +771,25 @@ class Runner_then_local(runner.Runner):
         # make sure the target taxon doesn't already have scores
         target_taxon_prots = self.target_taxon_prots.astype(int)
         diag = sp.diags(target_taxon_prots)
-        target_taxon_scores = self.goid_scores.dot(diag)
+        target_taxon_scores = self.term_scores.dot(diag)
         assert len(target_taxon_scores.data) == 0, \
             "Target taxon already has non-zero scores"
 
-        self.goid_scores = self.goid_scores.tocsr()
+        self.term_scores = self.term_scores.tocsr()
 
         start_wall_time = time.time()
         start_process_time = time.process_time()
-        print("\t%d total gene-term pairs with scores before" % len(self.goid_scores.data))
-        # multiply the entire goid_scores matrix with P, the ssn, to get the new scores
-        self.goid_scores = P.dot(self.goid_scores.T).T
-        print("\t%d total gene-term pairs with scores after" % len(self.goid_scores.data))
+        print("\t%d total gene-term pairs with scores before" % len(self.term_scores.data))
+        # multiply the entire term_scores matrix with P, the ssn, to get the new scores
+        self.term_scores = P.dot(self.term_scores.T).T
+        print("\t%d total gene-term pairs with scores after" % len(self.term_scores.data))
 
         if self.name == "genemania":
             # BUG: for GM, there are unreachable target nodes. Those should get a score of the value of k
             # but they got a score of 0. Since most of the nodes in the target have a negative score,
             # this put unreachable left-out negative examples at a much higher score.
             # This function fixes that bug by setting the unknown examples to k in the target species
-            self.goid_scores = fix_gm_default(self, target_taxon_prots)
+            self.term_scores = fix_gm_default(self, target_taxon_prots)
 
         # and store the times
         wall_time = time.time() - start_wall_time
@@ -824,16 +813,16 @@ def fix_gm_default(run_obj, target_taxon_prots):
     #k = (num_pos - num_neg) / float(num_pos + num_neg)
     term_k = (term_num_pos - term_num_neg) / (term_num_pos + term_num_neg)
     # remove the terms for which we don't need scores
-    idx2run = [run_obj.ann_obj.goid2idx[t] for t in run_obj.goids_to_run]
+    idx2run = [run_obj.ann_obj.term2idx[t] for t in run_obj.terms_to_run]
     idx2run2 = np.ones(len(term_k), dtype=bool)
     idx2run2[idx2run] = False
     term_k[idx2run2] = 0
     # expand the term_k vector to have the same value for each prot 
-    num_terms, num_prots = run_obj.goid_scores.shape
+    num_terms, num_prots = run_obj.term_scores.shape
     term_k_mat = np.ones((int(num_terms), int(target_taxon_prots.astype(int).sum())))
     term_k_mat = (term_k_mat.T*term_k).T
     # get the unreachable target nodes  (i.e., have a score = 0)
-    unreachable_nodes = run_obj.goid_scores[:,target_taxon_prots.astype(bool)] == 0
+    unreachable_nodes = run_obj.term_scores[:,target_taxon_prots.astype(bool)] == 0
     print(unreachable_nodes.shape)
     print(term_k_mat.shape)
     # and get the default value of k for those nodes only
@@ -842,10 +831,10 @@ def fix_gm_default(run_obj, target_taxon_prots):
     # transpose to get the prots on the rows
     gs_target_default = sp.lil_matrix((num_prots, num_terms))
     gs_target_default[target_taxon_prots.astype(bool)] = target_default_scores.T
-    # then add these values to the goid_scores matrix to set them as the default values
-    run_obj.goid_scores += gs_target_default.T
-    print("\t%d total gene-term pairs with scores after setting unreachable nodes to GM default" % len(run_obj.goid_scores.data))
-    return run_obj.goid_scores
+    # then add these values to the term_scores matrix to set them as the default values
+    run_obj.term_scores += gs_target_default.T
+    print("\t%d total gene-term pairs with scores after setting unreachable nodes to GM default" % len(run_obj.term_scores.data))
+    return run_obj.term_scores
 
 
 def print_net_stats(W, train_ann_mat, test_ann_mat, term_idx=None):
@@ -947,11 +936,11 @@ def check_frac_ccs(ccs, train_pos_prots, test_pos_prots, train_neg_prots=None, t
 def get_gmw_weights(train_ann_mat, net_obj, ann_obj):
     # each term gets its own weight
     term_weights = {}
-    for goid in tqdm(ann_obj.goids_to_run):
-        idx = ann_obj.goid2idx[goid]
+    for term in tqdm(ann_obj.terms_to_run):
+        idx = ann_obj.term2idx[term]
         y = train_ann_mat[idx,:].toarray()[0]
-        _, _, weights = net_obj.weight_GMW(y, goid)
-        term_weights[goid] = weights
+        _, _, weights = net_obj.weight_GMW(y, term)
+        term_weights[term] = weights
     return term_weights
 
 
@@ -975,7 +964,7 @@ def limit_to_taxons(taxon_prots, net_obj=None, ann_obj=None, **kwargs):
         # also limit the annotations to these prots
         new_ann_mat = ann_obj.ann_matrix.dot(diag)
         new_ann_obj = setup.Sparse_Annotations(
-                ann_obj.dag_matrix, new_ann_mat, ann_obj.goids, ann_obj.prots)
+                ann_obj.dag_matrix, new_ann_mat, ann_obj.terms, ann_obj.prots)
         print("\t%d pos annotations reduced to %d" % (
             len((ann_obj.ann_matrix > 0).astype(int).data),
             len((new_ann_mat > 0).astype(int).data)))
@@ -1219,7 +1208,7 @@ def rem_neg_neighbors(net_obj, ann_obj, cutoff=0):
     # and add them back together
     new_ann_mat = pos_mat - new_neg_mat
     new_ann_obj = setup.Sparse_Annotations(
-            ann_obj.dag_matrix, new_ann_mat, ann_obj.goids, ann_obj.prots)
+            ann_obj.dag_matrix, new_ann_mat, ann_obj.terms, ann_obj.prots)
     print("\t%d negative examples neighboring positive examples relabeled to unknown examples (%d negative examples before, %d after)." % (
         num_neg - new_num_neg, num_neg, new_num_neg))
     return new_ann_obj
