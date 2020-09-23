@@ -14,9 +14,9 @@ import copy
 # for some reason, the current directory isn't always in the path. this helps fix that
 if "" not in sys.path:
     sys.path.insert(0,"")
-from FastSinkSource import run_eval_algs
-from FastSinkSource.src.algorithms import runner
-from scripts.utils import baobab_utils
+from src.annotation_prediction.src import main as run_eval_algs
+from src.annotation_prediction.src.algorithms import runner as runner
+from src.utils import baobab_utils
 
 
 def get_algs_to_run(alg_settings, **kwargs):
