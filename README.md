@@ -1,10 +1,10 @@
 # multi-species-GOA-prediction
 
 This repository contains the main LOSO validation pipeline, algorithms, and plotting functions for the paper 
-[Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](https://doi.org/10.1101/646687).
+[Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](http://dx.doi.org/10.1093/bioinformatics/btaa885).
 
 ## Installation
-These scripts requires Python 3 due to the use of obonet to build the GO DAG.
+These scripts require Python 3 due to the use of obonet to build the GO DAG.
 
 - Required Python packages: `networkx`, `numpy`, `scipy`, `pandas`, `sklearn`, `obonet`, `pyyaml`, `tqdm`, `rpy2`
 - Required R packages: PPROC
@@ -35,5 +35,5 @@ This script requires a config file specific to the [annotation_prediction pipeli
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
 
-Jeffrey N. Law, Shiv D. Kale, and T. M. Murali. [Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](https://doi.org/10.1101/646687), _bioRxiv_ (2020). doi.org/10.1101/646687
+Jeffrey N. Law, Shiv D. Kale, and T. M. Murali. [Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](http://dx.doi.org/10.1093/bioinformatics/btaa885), _Bioinformatics_ (2020). doi.org/10.1093/bioinformatics/btaa885
 
