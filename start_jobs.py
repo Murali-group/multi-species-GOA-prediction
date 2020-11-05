@@ -1,5 +1,7 @@
 
-# Script to run methods by submitting them to a screen session, or to a PBS job scheduler (using qsub) 
+# This script is meant to run scripts/jobs in 1 of 2 ways: 1) in an HPC environment or 2) screen jobs on local machine.
+# It makes a config file for each algorithm and/or dataset being run.
+# It has all the options of run_experiments.py, plus a some extra at the bottom. makes a config file for each
 
 import yaml
 import argparse
@@ -245,7 +247,11 @@ def setup_parser(parser=None):
             help="Skip running and evaluating the species in the core. " +
             "Used for the COMP and ELEC evaluations to run/eval only the species without EXPC annotations")
 
-    group = parser.add_argument_group('masterscript options')
+    parser.description = "This script is meant to run scripts/jobs in 1 of 2 ways: 1) in an HPC environment or 2) screen jobs on local machine. " + \
+            "It makes a config file for each algorithm and/or dataset being run. " + \
+            "It has all the options of run_experiments.py, plus a some extra at the bottom. makes a config file for each "
+
+    group = parser.add_argument_group('start_jobs.py options')
     group.add_argument('--script-to-run', default="scripts/experiments.py",
             help="script to run when submitting to screen / qsub")
     group.add_argument('--alg', dest="algs", action="append", 

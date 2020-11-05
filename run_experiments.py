@@ -1,5 +1,5 @@
 
-# this is a wrapper script to experiment using string in only the target/left-out species 
+# This script sets up the core/target species and networks and performs the coresponding evaluations
 
 import argparse
 import os, sys
