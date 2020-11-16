@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:Murali-group/annotation_prediction
+	branch = master
+	commit = 697ca7c76050fe14d6714ebc4b9bd2a5f05d0e94
+	parent = 005ed261763ebcc841e7f932475d3d097eb7a343
+	method = merge
+	cmdver = 0.4.1
