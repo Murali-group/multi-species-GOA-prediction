@@ -47,7 +47,7 @@ def main(config_map, **kwargs):
             net_obj = setup.Sparse_Networks(net_obj.sparse_networks[0], net_obj.nodes)
 
         # add the taxon file paths for this dataset to kwargs
-        for arg in ['taxon_prot_file', 'only_taxon_file']:
+        for arg in ['taxon_prot_file', 'target_taxons_file']:
             kwargs[arg] = "%s/%s" % (input_dir, dataset[arg]) if arg in dataset else None
         species_to_uniprot_idx = eval_loso.get_uniprot_species(kwargs['taxon_prot_file'], ann_obj)
         # set this in kwargs to use it in all functions
@@ -57,7 +57,7 @@ def main(config_map, **kwargs):
             # for ELEC, I'm getting a memory error. 
             # I should be able to limit the memory by limiting the eval_ann_matrix to only the taxons that are currently being evaluated
             _, eval_taxons = eval_loso.get_selected_species(
-                    species_to_uniprot_idx, kwargs['only_taxon_file'], kwargs['taxons'])
+                    species_to_uniprot_idx, kwargs['target_taxons_file'], kwargs['taxons'])
             eval_taxon_prots = get_taxon_prots(len(net_obj.nodes), eval_taxons, species_to_uniprot_idx)
             eval_ann_obj = limit_to_taxons(eval_taxon_prots, ann_obj=eval_ann_obj, **kwargs)
 
@@ -105,14 +105,14 @@ def apply_dataset_settings_to_kwargs(dataset, **kwargs):
     # *ssnNbrs*: compute scores among the core species, and then transfer them to the target taxons
     # *ssn_only*: keep only the SSN (first network). Useful to keep the prots the same as SSN+STRING
     # *add_neighbor_edges*: integer. add the neighbors of non-target taxon nodes up to k steps away
-    # *limit_to_taxons_file*: limit all of the networks to the subgraph of prots in the given species
+    # *core_taxons_file*: limit all of the networks to the subgraph of prots in the given species
     # oracle_weights: use the annotations of the target species when running SWSN
     # rem_neg_neighbors: if a negative example has a positive example as a neighbor in the SSN, relabel it as an unknown example
     # youngs_neg: for a term t, a gene g cannot be a negative for t if g shares an annotation with any gene annotated to t 
     # sp_leaf_terms_only: for a given species, limit the terms to only those that are the most specific, meaning remove the ancestors of all terms
     for arg in ['ssnC', 'ssn_only', 'add_neighbor_edges',
                 'stringC', 'stringT',
-                'limit_to_taxons_file', 
+                'core_taxons_file', 
                 'oracle_weights', 'rem_neg_neighbors', 'youngs_neg',
                 'sp_leaf_terms_only', 'ssnNbrs', 'exp_name']:
         kwargs[arg] = dataset.get(arg)
@@ -120,20 +120,20 @@ def apply_dataset_settings_to_kwargs(dataset, **kwargs):
 
 
 def loso_experiments(alg_runners, net_obj, ann_obj, eval_ann_obj, **kwargs):
-    # species_names is a dictionary of taxonomy ID to name, from the only_taxon_file
-    # taxons_to_run is the list of taxons to evaluate, which comes from the only_taxon_file if none are passed in via kwargs
+    # species_names is a dictionary of taxonomy ID to name, from the target_taxons_file
+    # taxons_to_run is the list of taxons to evaluate, which comes from the target_taxons_file if none are passed in via kwargs
     species_names, taxons_to_run = eval_loso.get_selected_species(
-        kwargs['species_to_uniprot_idx'], kwargs['only_taxon_file'], kwargs['taxons'])
+        kwargs['species_to_uniprot_idx'], kwargs['target_taxons_file'], kwargs['taxons'])
     kwargs['alg_taxon_terms_to_skip'] = eval_loso.get_already_run_terms(alg_runners, **kwargs) 
     kwargs['num_test_cutoff'] = kwargs.get('num_test_cutoff', 10) 
     # keep track of the original to use it later
     orig_net_obj = net_obj
     # limit the networks to the given taxons 
     # TODO this is now the only way to run this script
-    #if kwargs.get('limit_to_taxons_file'):
+    #if kwargs.get('core_taxons_file'):
     # read in the specified taxons from the file
     _, core_taxons = eval_loso.get_selected_species(
-        kwargs['species_to_uniprot_idx'], kwargs['limit_to_taxons_file'])
+        kwargs['species_to_uniprot_idx'], kwargs['core_taxons_file'])
     core_taxon_prots = get_taxon_prots(
         len(net_obj.nodes), core_taxons, kwargs['species_to_uniprot_idx'])
     core_net_obj, core_ann_obj = limit_to_taxons(core_taxon_prots, net_obj=net_obj, ann_obj=ann_obj, **kwargs)
@@ -159,7 +159,7 @@ def loso_experiments(alg_runners, net_obj, ann_obj, eval_ann_obj, **kwargs):
     print("EVAL TARGET: %d core taxons, %d target taxons for which to evaluate" % (len(core_taxons), len(target_taxons)))
     # if there are non-core species to evaluate, do that here
     if eval_ann_obj is not None and len(target_taxons) > 0 \
-       and kwargs.get('limit_to_taxons_file'): 
+       and kwargs.get('core_taxons_file'): 
         # limit the original net to the core and target taxons
         target_taxon_prots = get_taxon_prots(
             len(orig_net_obj.nodes), target_taxons, kwargs['species_to_uniprot_idx'])
@@ -643,7 +643,7 @@ def run_loso_eval(
         new_net_obj = net_obj
         # UPDATE 2019-11-22: running for non-core taxons was moved outside of this loop
         ## add the extra SSN Target edges, if the network was already limitted, and this taxon isn't in the original set
-        #if kwargs.get('limit_to_taxons_file'):
+        #if kwargs.get('core_taxons_file'):
         #    #if t not in core_taxons:
         #        new_net_obj = limit_to_taxons(core_taxon_prots + taxon_prots, net_obj=orig_net_obj, **kwargs)
         #        #new_sparse_nets = add_ssn_target_taxon(orig_sparse_nets, sparse_nets, core_taxon_prots, taxon_prots, **kwargs)
