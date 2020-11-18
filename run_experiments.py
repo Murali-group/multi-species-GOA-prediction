@@ -36,7 +36,7 @@ def main(config_map, **kwargs):
         print({key: val for key,val in kwargs.items() \
                 if key not in ['species_to_uniprot_idx', 'alg_taxon_terms_to_skip']})
         #print(kwargs)
-        net_obj, ann_obj, eval_ann_obj = run_eval_algs.setup_dataset(dataset, input_dir, alg_settings, **kwargs) 
+        net_obj, ann_obj, eval_ann_obj = run_eval_algs.setup_dataset(dataset, input_dir, **kwargs) 
         # if there are no annotations, then skip this dataset
         if len(ann_obj.terms) == 0:
             print("No terms found. Skipping this dataset")
@@ -47,9 +47,9 @@ def main(config_map, **kwargs):
             net_obj = setup.Sparse_Networks(net_obj.sparse_networks[0], net_obj.nodes)
 
         # add the taxon file paths for this dataset to kwargs
-        for arg in ['taxon_file', 'only_taxon_file']:
+        for arg in ['taxon_prot_file', 'only_taxon_file']:
             kwargs[arg] = "%s/%s" % (input_dir, dataset[arg]) if arg in dataset else None
-        species_to_uniprot_idx = eval_loso.get_uniprot_species(kwargs['taxon_file'], ann_obj)
+        species_to_uniprot_idx = eval_loso.get_uniprot_species(kwargs['taxon_prot_file'], ann_obj)
         # set this in kwargs to use it in all functions
         kwargs['species_to_uniprot_idx'] = species_to_uniprot_idx
 
@@ -98,23 +98,23 @@ def main(config_map, **kwargs):
 
 
 def apply_dataset_settings_to_kwargs(dataset, **kwargs):
-    # pull the ssn_target_only and string_target_only options from the config file
-    # *ssn_target_ann_only*:
+    # pull the specified options from the dataset in the config file to kwargs
+    # *ssnC*: keep the SSN among nodes in the core
+    # *stringC*: keep the STRING edges among nodes in the core species
+    # *stringT*: keep the STRING edges among nodes in the target species
+    # *ssnNbrs*: compute scores among the core species, and then transfer them to the target taxons
     # *ssn_only*: keep only the SSN (first network). Useful to keep the prots the same as SSN+STRING
     # *add_neighbor_edges*: integer. add the neighbors of non-target taxon nodes up to k steps away
-    # string_nontarget_only: use only the string network of the non-target species
     # *limit_to_taxons_file*: limit all of the networks to the subgraph of prots in the given species
-    # *add_target_taxon*: if *limit_to_taxons_file* is specified, this option will add the edges of the target taxon,
-    #    and SSN between the specified taxons and the target taxon.
     # oracle_weights: use the annotations of the target species when running SWSN
     # rem_neg_neighbors: if a negative example has a positive example as a neighbor in the SSN, relabel it as an unknown example
     # youngs_neg: for a term t, a gene g cannot be a negative for t if g shares an annotation with any gene annotated to t 
     # sp_leaf_terms_only: for a given species, limit the terms to only those that are the most specific, meaning remove the ancestors of all terms
-    for arg in ['ssn_target_only', 'ssn_target_ann_only', 'ssn_only', 'add_neighbor_edges',
-                'string_target_only', 'string_nontarget_only',
-                'limit_to_taxons_file', 'add_target_taxon',
+    for arg in ['ssnC', 'ssn_only', 'add_neighbor_edges',
+                'stringC', 'stringT',
+                'limit_to_taxons_file', 
                 'oracle_weights', 'rem_neg_neighbors', 'youngs_neg',
-                'sp_leaf_terms_only', 'ssn_core_to_target_local', 'exp_name']:
+                'sp_leaf_terms_only', 'ssnNbrs', 'exp_name']:
         kwargs[arg] = dataset.get(arg)
     return kwargs
 
@@ -159,7 +159,7 @@ def loso_experiments(alg_runners, net_obj, ann_obj, eval_ann_obj, **kwargs):
     print("EVAL TARGET: %d core taxons, %d target taxons for which to evaluate" % (len(core_taxons), len(target_taxons)))
     # if there are non-core species to evaluate, do that here
     if eval_ann_obj is not None and len(target_taxons) > 0 \
-       and kwargs.get('limit_to_taxons_file') and kwargs.get('add_target_taxon'):
+       and kwargs.get('limit_to_taxons_file'): 
         # limit the original net to the core and target taxons
         target_taxon_prots = get_taxon_prots(
             len(orig_net_obj.nodes), target_taxons, kwargs['species_to_uniprot_idx'])
@@ -270,7 +270,7 @@ def run_eval_target_sp(
             if ('process_time' in key or 'wall_time' in key) and '_core_loso' not in key:
                 run_obj.params_results[key+'_core_loso'] = val
 
-    if kwargs.get('ssn_core_to_target_local'):
+    if kwargs.get('ssnNbrs'):
         # For all other target species, precompute the scores and then transfer (ssnLocal),
         params_results = compute_core_scores_then_transfer(
             target_taxons, target_taxon_prots, core_taxon_prots,
@@ -643,7 +643,7 @@ def run_loso_eval(
         new_net_obj = net_obj
         # UPDATE 2019-11-22: running for non-core taxons was moved outside of this loop
         ## add the extra SSN Target edges, if the network was already limitted, and this taxon isn't in the original set
-        #if kwargs.get('limit_to_taxons_file') and kwargs.get('add_target_taxon'):
+        #if kwargs.get('limit_to_taxons_file'):
         #    #if t not in core_taxons:
         #        new_net_obj = limit_to_taxons(core_taxon_prots + taxon_prots, net_obj=orig_net_obj, **kwargs)
         #        #new_sparse_nets = add_ssn_target_taxon(orig_sparse_nets, sparse_nets, core_taxon_prots, taxon_prots, **kwargs)
@@ -653,7 +653,7 @@ def run_loso_eval(
             tqdm.write("Using the target taxon's annotations to weight the network")
             curr_ann_mat = test_ann_mat
         ann_obj.terms_to_run = terms_to_run if not kwargs.get('stats_only') else ann_obj.terms
-        if kwargs.get('ssn_core_to_target_local'):
+        if kwargs.get('ssnNbrs'):
             new_net_obj, ssn_net_obj = apply_net_comb_filters(
                     curr_ann_mat, taxon_prots, new_net_obj, ann_obj, **kwargs)
         else:
@@ -705,7 +705,7 @@ def run_loso_eval(
             run_obj.target_prots = taxon_prot_idx
 
             new_run_obj = run_obj
-            if kwargs.get('ssn_core_to_target_local'):
+            if kwargs.get('ssnNbrs'):
                 # TODO make this less hacky
                 # had to hack the runner object so that Local will be run after the alg is run on the core. Makes the rest of the pipeline work
                 if run_obj.name in ['sinksource_bounds', 'sinksourceplus_bounds']:
@@ -741,7 +741,7 @@ def run_loso_eval(
                 new_run_obj, ann_obj, 
                 train_ann_mat, test_ann_mat,
                 taxon=t, **kwargs)
-            if kwargs.get('compute_smin') and kwargs.get('ssn_core_to_target_local'):
+            if kwargs.get('compute_smin') and kwargs.get('ssnNbrs'):
                 run_obj.all_pos_neg_scores = new_run_obj.all_pos_neg_scores
                 run_obj.eval_mat = new_run_obj.eval_mat
                 run_obj.out_pref = new_run_obj.out_pref
@@ -979,16 +979,17 @@ def limit_to_taxons(taxon_prots, net_obj=None, ann_obj=None, **kwargs):
 
 def apply_net_comb_filters(
         train_ann_mat, taxon_prots, net_obj, ann_obj,
-        string_target_only=False, string_nontarget_only=False, 
-        ssn_target_only=False, ssn_target_ann_only=False,
-        ssn_core_to_target_local=False, 
+        stringC=True, stringT=True, 
+        ssnC=True, 
+        ssnNbrs=False, 
         **kwargs):
     """
     Apply the network combination filters
     *taxon_prots*: array with 1's at the indices of proteins/nodes in the target taxon, 0's at the rest
-    *string_target_only*: remove STRING edges for non-target taxons
-    *string_nontarget_only*: remove STRING edges for target taxon
-    *ssn_target_only*: remove SSN edges between non-target taxon prots
+    *stringC*: keep STRING edges for core taxons
+    *stringT*: keep STRING edges for target taxon
+    *ssnC*: keep SSN edges between core taxon prots
+    *ssnNbrs: 
     """
     sparse_nets = net_obj.sparse_networks if net_obj.multi_net is True else [net_obj.W]
     # the first net should be the SSN. it will be modified later
@@ -998,7 +999,7 @@ def apply_net_comb_filters(
         # the rest are the string nets
         string_nets = sparse_nets[1:]
         string_net_names = net_obj.net_names[1:]
-        if (ssn_core_to_target_local and ssn_target_only) or kwargs.get('async_rw'):
+        if (ssnNbrs and not ssnC) or kwargs.get('async_rw'):
             # create two separate net objects. One for the core network edges, and one for the SSN edges.
             # if SSN should not be included in the core, then remove it
             print("\tkeeping only the STRING edges")
@@ -1013,13 +1014,12 @@ def apply_net_comb_filters(
         elif net_obj.weight_gmw:
             term_weights = get_gmw_weights(train_ann_mat, net_obj, ann_obj)
         # setup the STRING networks.
-        # string_target_only corresponds to stringT, and string_nontarget_only to stringC
         # specifying neither of these options will give stringT+stringC
-        if string_target_only or string_nontarget_only:
-            if string_target_only:
-                print("\tremoving STRING edges which are not of this taxon")
+        if not stringC or not stringT:
+            if not stringC:
+                print("\tremoving STRING edges which are among the core")
                 prots_to_keep = taxon_prots 
-            if string_nontarget_only:
+            if not stringT:
                 print("\tremoving STRING edges of the target taxon")
                 # flip the 0s and 1s
                 prots_to_keep = 1 - taxon_prots
@@ -1033,10 +1033,10 @@ def apply_net_comb_filters(
             string_nets = new_string_nets
 
     # now setup the SSN
-    if ssn_core_to_target_local and net_obj.multi_net:
+    if ssnNbrs and net_obj.multi_net:
         core_to_target_ssn, target_ssn = get_core_to_target_ssn(ssn, taxon_prots)
         ssn_net_obj = setup.Sparse_Networks(core_to_target_ssn, net_obj.nodes)
-        if ssn_target_only:
+        if not ssnC:
             # keep only the STRING edges for the core
             sparse_nets = string_nets
         else:
@@ -1048,10 +1048,9 @@ def apply_net_comb_filters(
                 ssn = core_ssn
             else:
                 sparse_nets = [core_ssn] + string_nets
-    elif ssn_target_only or ssn_target_ann_only:
-        new_ssn = remove_nontarget_ssn(
-            ssn, train_ann_mat, taxon_prots,
-            ssn_target_ann_only=ssn_target_ann_only, **kwargs) 
+    elif not ssnC:
+        new_ssn = remove_core_ssn(
+            ssn, train_ann_mat, taxon_prots, **kwargs) 
         if kwargs.get('async_rw'):
             sparse_nets = string_nets if net_obj.multi_net else [new_ssn]
             ssn = new_ssn
@@ -1080,7 +1079,7 @@ def apply_net_comb_filters(
                 sparse_nets, net_obj.nodes, weight_method='gmw', term_weights=term_weights)
         if kwargs.get('async_rw'):
             new_net_obj.SSN = ssn
-        if ssn_core_to_target_local:
+        if ssnNbrs:
             return new_net_obj, ssn_net_obj
     else:
         W = sparse_nets[0]
@@ -1110,36 +1109,35 @@ def get_core_to_target_ssn(ssn, target_prots):
     return core_to_target_ssn, target_ssn
 
 
-def remove_nontarget_ssn(ssn, train_ann_mat, taxon_prots, 
-        ssn_target_ann_only=False, add_neighbor_edges=0, **kwargs):
+def remove_core_ssn(ssn, train_ann_mat, taxon_prots, 
+        add_neighbor_edges=0, **kwargs):
     """
-    *ssn_target_only*: remove SSN edges between non-target taxon prots
-    *ssn_target_ann_only*: also remove nodes that have no annotations in train_ann_mat
     *add_neighbor_edges*: Add edges of non-target neighbors that are the given # of steps away 
     """
     # now remove the SSN edges which are between non-target species 
     #tqdm.write("Removing SSN edges between non-target taxon prots")
     # replacing with print temporarily
-    print("Removing SSN edges between non-target taxon prots")
+    print("Removing SSN edges between core taxon prots")
     new_ssn = get_edges_of_nodes(ssn, taxon_prots)
-    if ssn_target_ann_only:
-        # UPDATE: now also remove edges to non-taxon prots which don't have any annotations
-        # a node can only be a negative example if it also has a positive example
-        pos_train_ann = (train_ann_mat > 0).astype(int)
-        # sum over the columns to get the # ann per gene
-        ann_prots = np.ravel(pos_train_ann.sum(axis=0))
-        # limit to 1 and add the taxon prots
-        ann_prots = (ann_prots > 0).astype(int)
-        ann_prots += taxon_prots.astype(int)
-        print("\tkeeping %d prots that have an annotation, or are from the target taxon" % (np.sum(ann_prots)))
-        # flip the 0s and 1s
-        non_ann_prots = 1 - ann_prots
-        print("\tremoving edges to/from non-target taxon prots with no annotations")
-        # now set all of the non-annotated prot rows and columns to 0
-        diag = sp.diags(non_ann_prots)
-        # there's no edges between the non_ann_prots, so no need to handle those
-        ssn_to_remove = diag.dot(new_ssn) + new_ssn.dot(diag)
-        new_ssn = new_ssn - ssn_to_remove
+    # *ssn_target_ann_only*: also remove nodes that have no annotations in train_ann_mat
+    # if ssn_target_ann_only:
+    #     # UPDATE: now also remove edges to core prots which don't have any annotations
+    #     # a node can only be a negative example if it also has a positive example
+    #     pos_train_ann = (train_ann_mat > 0).astype(int)
+    #     # sum over the columns to get the # ann per gene
+    #     ann_prots = np.ravel(pos_train_ann.sum(axis=0))
+    #     # limit to 1 and add the taxon prots
+    #     ann_prots = (ann_prots > 0).astype(int)
+    #     ann_prots += taxon_prots.astype(int)
+    #     print("\tkeeping %d prots that have an annotation, or are from the target taxon" % (np.sum(ann_prots)))
+    #     # flip the 0s and 1s
+    #     non_ann_prots = 1 - ann_prots
+    #     print("\tremoving edges to/from non-target taxon prots with no annotations")
+    #     # now set all of the non-annotated prot rows and columns to 0
+    #     diag = sp.diags(non_ann_prots)
+    #     # there's no edges between the non_ann_prots, so no need to handle those
+    #     ssn_to_remove = diag.dot(new_ssn) + new_ssn.dot(diag)
+    #     new_ssn = new_ssn - ssn_to_remove
 #    # not going to use this
 #    if add_neighbor_edges is not None and add_neighbor_edges > 0:
 #        for i in range(add_neighbor_edges):
