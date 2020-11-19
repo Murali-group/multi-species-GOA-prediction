@@ -47,7 +47,7 @@ def main(config_map, **kwargs):
             net_obj = setup.Sparse_Networks(net_obj.sparse_networks[0], net_obj.nodes)
 
         # add the taxon file paths for this dataset to kwargs
-        for arg in ['taxon_prot_file', 'target_taxons_file']:
+        for arg in ['taxon_prot_file', 'core_taxons_file', 'target_taxons_file']:
             kwargs[arg] = "%s/%s" % (input_dir, dataset[arg]) if arg in dataset else None
         species_to_uniprot_idx = eval_loso.get_uniprot_species(kwargs['taxon_prot_file'], ann_obj)
         # set this in kwargs to use it in all functions
