@@ -46,10 +46,10 @@ To change which algorithms are run, change the `should_run` flag to `True/False`
 > Note that the annotation_prediction code was added as a [git-subrepo](https://github.com/ingydotnet/git-subrepo), so to make changes to that code, please commit them to that repository directly, and then pull them with `git subrepo pull src/annotation_prediction/`, or follow the suggestions in the git-subrepo documentation.
 
 ### Generate Predictions
-To generate predictions, the following command extracts the core network from the network files and generates predictions.
+To generate predictions, `make_predictions.py` extracts the core network from the network files and generates predictions. The default number of predictions stored is 10. To write more, use either the `--num-pred-to-write` or `--factor-pred-to-writ`e options (see `python make_predictions.py --help`). To write the prediction scores of all nodes:
 
 ```
-python make_predictions.py --config config-files/expc-core-bp.yaml
+python make_predictions.py --config config-files/expc-core-bp.yaml --num-pred-to-write -1
 ```
 
 If you do not need to specify the core and target species meaning you have already built a network and wish to make predictions for all nodes in the network, you can use the standard `run_eval_algs.py` script in the [annotation_prediction pipeline](https://github.com/Murali-group/annotation_prediction).
