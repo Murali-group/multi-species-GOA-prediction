@@ -85,8 +85,19 @@ If using an anaconda environment, include conda's `activate` command in the `--p
 
 Example call:
 ```
-python start_jobs.py --config config-files/expc-eval-comp/expc-eval-comp-net-comb-bp.yaml  --alg fastsinksource --alg genemania --alg birgrank --alg sinksource --alg localplus   --job-per-dataset --job-per-param --qsub --cores 3 --script-to-run run_experiments.py --python="source /data/jeff-law/tools/anaconda3/bin/activate fungcat; python" --pass-to-script --skip-core
+python start_jobs.py \
+  --config config-files/expc-eval-comp/expc-eval-comp-net-comb-bp.yaml  \
+  --alg fastsinksource --alg genemania \
+  --alg birgrank --alg sinksource --alg localplus   \
+  --job-per-dataset --job-per-param \
+  --qsub --cores 3 \
+  --script-to-run run_experiments.py \
+  --python="source /data/jeff-law/tools/anaconda3/bin/activate fungcat; python" \
+  --pass-to-script --skip-core
 ```
+
+### Plot the results
+TODO.
 
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
