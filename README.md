@@ -46,7 +46,7 @@ To change which algorithms are run, change the `should_run` flag to `True/False`
 > Note that the annotation_prediction code was added as a [git-subrepo](https://github.com/ingydotnet/git-subrepo), so to make changes to that code, please commit them to that repository directly, and then pull them with `git subrepo pull src/annotation_prediction/`, or follow the suggestions in the git-subrepo documentation.
 
 ### Generate Predictions
-To generate predictions, `make_predictions.py` extracts the core network from the network files and generates predictions. The default number of predictions stored is 10. To write more, use either the `--num-pred-to-write` or `--factor-pred-to-writ`e options (see `python make_predictions.py --help`). To write the prediction scores of all nodes:
+To generate predictions, `make_predictions.py` extracts the core network from the network files and generates predictions. The default number of predictions stored is 10. To write more, use either the `--num-pred-to-write` or `--factor-pred-to-write` options (see `python make_predictions.py --help`). To write the prediction scores of all nodes:
 
 ```
 python make_predictions.py --config config-files/expc-core-bp.yaml --num-pred-to-write -1
