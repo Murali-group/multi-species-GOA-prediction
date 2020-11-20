@@ -6,7 +6,7 @@
 [subrepo]
 	remote = git@github.com:Murali-group/annotation_prediction
 	branch = master
-	commit = f65f849ead975e8e45d8593325393b1f60a200eb
-	parent = 80942aa1177c6156441b979b8cc5d7c6feab865c
+	commit = 2cf5e77e4eab5b698265d4c60ba9b6be542ecd13
+	parent = ac41604ae43bcb56cbba84d11ef961bf1866fcae
 	method = merge
 	cmdver = 0.4.1
