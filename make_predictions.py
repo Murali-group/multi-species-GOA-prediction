@@ -46,7 +46,7 @@ def main(config_map, **kwargs):
             continue
 
         # add the taxon file paths for this dataset to kwargs
-        for arg in ['taxon_prot_file', 'target_taxons_file']:
+        for arg in ['taxon_prot_file', 'core_taxons_file', 'target_taxons_file']:
             kwargs[arg] = "%s/%s" % (input_dir, dataset[arg]) if arg in dataset else None
         species_to_uniprot_idx = eval_loso.get_uniprot_species(kwargs['taxon_prot_file'], ann_obj)
         # set this in kwargs to use it in all functions
@@ -134,6 +134,7 @@ def run_alg_target_sp(
     # now write the prediction scores to file
     for run_obj in alg_runners:
         num_pred_to_write = kwargs.get('num_pred_to_write',10)
+        num_pred_to_write = 10 if num_pred_to_write is None else num_pred_to_write
         if kwargs.get('factor_pred_to_write') is not None:
             # make a dictionary with the # ann*factor for each term
             num_pred_to_write = {} 
@@ -142,9 +143,11 @@ def run_alg_target_sp(
                 positives = (y > 0).nonzero()[1]
                 num_pred_to_write[run_obj.terms[i]] = len(positives) * kwargs['factor_pred_to_write']
         if num_pred_to_write != 0:
-            utils.checkDir(os.path.dirname(run_obj.out_file)) 
-            alg_utils.write_output(run_obj.term_scores, run_obj.ann_obj.terms, run_obj.ann_obj.prots,
-                            run_obj.out_file, num_pred_to_write=num_pred_to_write)
+            out_file = "%s.txt" % (run_obj.out_pref)
+            utils.checkDir(os.path.dirname(out_file)) 
+            alg_utils.write_output(
+                run_obj.term_scores, run_obj.ann_obj.terms, run_obj.ann_obj.prots,
+                out_file, num_pred_to_write=num_pred_to_write)
 
     #eval_loso.write_stats_file(alg_runners, params_results)
     #print(params_results)
@@ -164,7 +167,7 @@ def compute_core_scores_then_transfer(
         alg_runners, orig_net_obj, core_net_obj, core_ann_obj,
         terms_to_run, **kwargs):
     params_results = defaultdict(int)
-    print("\nComputing scores for the core species, then transferring to %d target species using ssnLocal" % (len(target_taxons)))
+    print("\nComputing scores for the core species, then transferring to %d target species using ssnNbrs" % (len(target_taxons)))
 
     ssn = orig_net_obj.sparse_networks[0]
 
@@ -290,6 +293,7 @@ def connect_target_species_run_eval(
         run_obj.setupOutputs()
         if kwargs.get('verbose'):
             utils.print_memory_usage()
+        print("\n\t%d total gene-term pairs with scores" % len(run_obj.term_scores.data))
     return params_results
 
 
