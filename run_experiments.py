@@ -421,7 +421,7 @@ def compute_core_scores_then_transfer(
         alg_runners, orig_net_obj, core_net_obj, core_ann_obj, eval_ann_obj,
         terms_to_run, **kwargs):
     params_results = defaultdict(int)
-    print("\nComputing scores for the core species, then transferring to %d target species using ssnLocal" % (len(target_taxons)))
+    print("\nComputing scores for the core species, then transferring to %d target species using ssnNbrs" % (len(target_taxons)))
 
     ssn = orig_net_obj.sparse_networks[0]
 
@@ -980,8 +980,7 @@ def limit_to_taxons(taxon_prots, net_obj=None, ann_obj=None, **kwargs):
 def apply_net_comb_filters(
         train_ann_mat, taxon_prots, net_obj, ann_obj,
         stringC=True, stringT=True, 
-        ssnC=True, 
-        ssnNbrs=False, 
+        ssnC=True, ssnNbrs=False, 
         **kwargs):
     """
     Apply the network combination filters
