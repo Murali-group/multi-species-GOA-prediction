@@ -4,12 +4,15 @@
 # This script will put these directories inside the inputs folder
 # and setup the network files the way the scripts are expecting.
 
-mkdir inputs; cd inputs
+cd inputs
 echo "Downloading the data from zenodo"
 # TODO download the data from zenodo
-#wget
+wget https://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/2020-fastsinksource-data.zip
 echo "unzipping"
-#unzip
+unzip 2020-fastsinksource-data.zip
+mv 2020-fastsinksource-data/* .
+rmdir 2020-fastsinksource-data
+rm 2020-fastsinksource-data.zip
 
 # make the input directory file structure the config files are expecting
 mkdir net-versions; cd net-versions
