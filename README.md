@@ -9,14 +9,18 @@ The networks and GO term annotations for the 200 bacterial species with the most
 ## Setup Environment
 
 ### Datasets
-Run the following command (from the base directory) to download the datasets and setup the environment in which the datasets are used. 
+Run the `setup.sh` script (from the base directory) to download the datasets and setup the environment in which the datasets are used. 
 
 ```
 bash setup.sh
 ```
 
 ### Python
-These scripts require Python 3 due to the use of obonet to build the GO DAG.
+Run the `setup_conda_venv.sh` script to install the required packages. The commands are also listed below.
+
+```
+bash setup_conda_venv.sh
+```
 
 - Required Python packages: `networkx`, `numpy`, `scipy`, `pandas`, `sklearn`, `obonet`, `pyyaml`, `tqdm`, `rpy2`
 - Required R packages: PPROC
@@ -25,14 +29,13 @@ We recommend using [Anaconda](https://www.anaconda.com/) for Python, especially 
 To setup your environment, use the following commands:
 
 ```
-conda create -n fastsinksource python=3.7 r=3.6
-conda activate fastsinksource
+conda create -y --name mult-sp-pred python=3.7 r=3.6 
+conda activate mult-sp-pred
 pip install -r requirements.txt
 ```
 To install the R packages:
 ```
 R -e "install.packages('https://cran.r-project.org/src/contrib/PRROC_1.3.1.tar.gz', type = 'source')"
-conda install -c bioconda bioconductor-clusterprofiler
 ```
 
 ## Run the Pipeline

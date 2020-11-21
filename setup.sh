@@ -1,10 +1,14 @@
+#!/bin/bash
+
 # The zip file has the following directores: annotations, networks, sequences, taxons
 # This script will put these directories inside the inputs folder
 # and setup the network files the way the scripts are expecting.
 
-#mkdir inputs; cd inputs
+mkdir inputs; cd inputs
+echo "Downloading the data from zenodo"
 # TODO download the data from zenodo
 #wget
+echo "unzipping"
 #unzip
 
 # make the input directory file structure the config files are expecting
@@ -20,3 +24,4 @@ ln -s ../../networks/sp200-stringv11-700-net.txt.gz
 
 cd ../../
 gunzip sequences/sp200-uniprot-mapping.tab.gz
+
