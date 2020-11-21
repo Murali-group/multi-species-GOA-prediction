@@ -62,14 +62,14 @@ input_settings:
     dataset_default_settings:
           net_files: ["sp200-eval-e0_1-net.txt.gz"]
           obo_file: "annotations/2019-10-15-go.obo"
-          pos_neg_file: "annotations/expc/pos-neg-bp-20.tsv.gz"
+          pos_neg_file: "annotations/expc/pos-neg-mf-20.tsv.gz"
           taxon_prot_file: "sequences/sp200-uniprot-mapping.tab"
-          core_taxons_file: "taxons/expc/expc-bp-taxons.txt"
-          ## Make predictions for the 25 core species. 
+          core_taxons_file: "taxons/expc/expc-mf-taxons.txt"
+          ## Make predictions for the 40 core species. 
           ## Note that ssnNbrs doesn't work when making predictions for the core
-          #target_taxons_file: "taxons/expc/expc-bp-taxons.txt"
-          # Make predictions for the 175 target species
-          target_taxons_file: "taxons/elec/eval-elec-only-bp.txt"
+          #target_taxons_file: "taxons/expc/expc-mf-taxons.txt"
+          # Make predictions for the 160 target species
+          target_taxons_file: "taxons/elec/eval-elec-only-mf.txt"
           #sp_leaf_terms_only: True
           youngs_neg: True
           rem_neg_neighbors: False  
@@ -77,7 +77,7 @@ input_settings:
     datasets:
 
 #        - plot_exp_name: "ssnT+ssnC+stringT+stringC"
-#          exp_name: "expc/bp-leaf-yneg-full"
+#          exp_name: "expc/mf-leaf-yneg-full"
 #          net_version: "net-versions/2019_10-sp200-eval-e0_1-stringv11-700"
 #          ssnC: True  
 #          stringC: True  
@@ -88,10 +88,10 @@ input_settings:
 #              weight_method: 'swsn'
 #              string_nets: 'core'
 #              string_cutoff: 700
-#              save_net: 'expc-bp-core-swsn-net.txt'
+#              save_net: 'expc-mf-core-swsn-net.txt'
 
         - plot_exp_name: "ssnC+stringC,ssnNbrs"
-          exp_name: "expc/bp-leaf-yneg-ssnC-stringC-ssnNbrs"
+          exp_name: "expc/mf-leaf-yneg-ssnC-stringC-ssnNbrs"
           net_version: "net-versions/2019_10-sp200-eval-e0_1-stringv11-700"
           ssnC: True  
           stringC: True  
@@ -103,7 +103,7 @@ input_settings:
               weight_method: 'swsn'
               string_nets: 'core'
               string_cutoff: 700
-              save_net: 'expc-bp-core-swsn-net.txt'
+              save_net: 'expc-mf-core-swsn-net.txt'
 
 
 # the outputs will follow this structure:
