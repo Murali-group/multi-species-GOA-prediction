@@ -23,10 +23,16 @@ The 200-species SSN is available as a tab-delimited edge list, where nodes are i
 
 - 200 species SSN: `networks/sp200-eval-e0_1-net.txt.gz`
 
-## STRING networks
+## STRING Networks
 In STRING v11, data was available for 173/200 species. They are all concatenated into a single, tab-delimited file with a STRING channel per column, and the nodes are mapped to the UniProt namespace. We used a cutoff of 700 on the "combined" STRING edge score.
 
 - STRING networks: `networks/sp200-stringv11-700-net.txt.gz`
+
+## EXPC Core Network
+The SSN-C+STRING-C network (combined using SWSN) for the core EXPC species are available here:
+
+- BP: `networks/expc-core/expc-bp-core-swsn-net.txt.gz`
+- MF: `networks/expc-core/expc-mf-core-swsn-net.txt.gz`
 
 ## GO Annotations
 Also available are the following annotations files.
