@@ -33,7 +33,7 @@ Also available are the following annotations files.
 
 - A GAF file containing the GO annotations of each gene for the 200 species.
   - `annotations/2019_10-sp200-goa.gaf.gz`
-- The positive and negative examples for each BP and MF GO term, generated from the GAF file, are available in these zipped folders. In a "pos-neg" file, the rows are the genes (UniProt IDs), the columns are the terms, and the values are 1/0/-1 corresponding to positive, unknown, and negative examples, respectively.
+- The positive and negative examples for each BP and MF GO term, generated from the GAF file, are available in the folders listed below. In a "pos-neg" file, the rows are the genes (UniProt IDs), the columns are the terms, and the values are 1/0/-1 corresponding to positive, unknown, and negative examples, respectively.
   - `annotations/expc`
   - `annotations/comp`
   - `annotations/elec`
