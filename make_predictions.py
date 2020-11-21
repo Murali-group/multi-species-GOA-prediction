@@ -7,7 +7,6 @@ import numpy as np
 from scipy import sparse as sp
 from tqdm import tqdm
 import yaml
-import time
 from collections import defaultdict
 #import pandas as pd
 
@@ -17,14 +16,11 @@ if "" not in sys.path:
 import run_experiments as run
 from src.annotation_prediction.src import main as run_eval_algs
 from src.annotation_prediction.src.evaluate import eval_leave_one_species_out as eval_loso
-from src.annotation_prediction.src.evaluate import eval_utils as eval_utils
 from src.annotation_prediction.src import setup_sparse_networks as setup
-from src.annotation_prediction.src.algorithms import runner as runner
 #import src.annotation_prediction.src.go_term_prediction_examples.go_term_prediction_examples as go_examples
 #import src.annotation_prediction.src.algorithms.aptrank_birgrank.run_birgrank as run_birgrank
 import src.annotation_prediction.src.utils.config_utils as config_utils
 import src.annotation_prediction.src.utils.file_utils as utils
-import src.annotation_prediction.src.utils.ontology_utils as go_utils
 import src.annotation_prediction.src.algorithms.alg_utils as alg_utils
 
 
