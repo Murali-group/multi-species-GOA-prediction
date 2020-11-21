@@ -4,11 +4,12 @@ This repository contains the main LOSO validation pipeline, algorithms, and plot
 [Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](http://dx.doi.org/10.1093/bioinformatics/btaa885).
 
 ## Download Datasets
-The networks and GO term annotations for the 200 bacterial species with the most EXPC and COMP annotations are available here: https://doi.org/10.5281/zenodo.4280990
+The networks and GO term annotations for the 200 bacterial species with the most EXPC and COMP annotations are available here: https://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/2020-fastsinksource-data.zip
 
 ## Setup Environment
 
 ### Datasets
+More information about the input datasets is available in the [inputs README](https://github.com/Murali-group/multi-species-GOA-prediction/blob/master/inputs/README.md)
 Run the following command (from the base directory) to download the datasets and setup the environment in which the datasets are used. 
 
 ```
@@ -97,7 +98,7 @@ python start_jobs.py \
 ```
 
 ### Plot the results
-TODO.
+> TODO add a script to regenerate all of the results and plots.
 
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
