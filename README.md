@@ -4,7 +4,7 @@ This repository contains the main LOSO validation pipeline, algorithms, and plot
 [Accurate and Efficient Gene Function Prediction using a Multi-Bacterial Network](http://dx.doi.org/10.1093/bioinformatics/btaa885).
 
 ## Download Datasets
-The networks and GO term annotations for the 200 bacterial species with the most EXPC and COMP annotations are available here: https://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/2020-fastsinksource-data.zip
+The networks and GO term annotations for the 200 bacterial species with the most EXPC and COMP annotations are available here: https://zenodo.org/record/4280990
 
 ## Setup Environment
 

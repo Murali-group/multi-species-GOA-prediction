@@ -1,5 +1,5 @@
 ## Download
-https://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/2020-fastsinksource-data.zip
+https://zenodo.org/record/4280990/files/2020-fastsinksource-data.zip?download=1
 
 
 ## 200 Bacterial Species

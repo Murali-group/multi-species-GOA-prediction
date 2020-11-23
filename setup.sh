@@ -6,8 +6,7 @@
 
 cd inputs
 echo "Downloading the data from zenodo"
-# TODO download the data from zenodo
-wget https://bioinformatics.cs.vt.edu/~jeffl/supplements/2020-fastsinksource/2020-fastsinksource-data.zip
+wget https://zenodo.org/record/4280990/files/2020-fastsinksource-data.zip?download=1
 echo "unzipping"
 unzip 2020-fastsinksource-data.zip
 mv 2020-fastsinksource-data/* .
