@@ -6,7 +6,7 @@
 
 cd inputs
 echo "Downloading the data from zenodo"
-wget https://zenodo.org/record/4280990/files/2020-fastsinksource-data.zip?download=1
+wget https://zenodo.org/record/4280990/files/2020-fastsinksource-data.zip?download=1 -O 2020-fastsinksource-data.zip
 echo "unzipping"
 unzip 2020-fastsinksource-data.zip
 mv 2020-fastsinksource-data/* .
