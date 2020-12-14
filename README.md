@@ -83,12 +83,31 @@ EXPC eval ELEC:
 python -u run_experiments.py --config config-files/expc-eval-elec/expc-eval-elec-net-comb-bp.yaml --skip-core
 ```
 
+Since AsyRW is run on only the last combination, we need to use a config file with only that combination. For example:
+```
+python -u run_experiments.py --config config-files/expc/expc-loso-ssnNbrs-bp.yaml
+```
+
 #### Run Using Screen or HPC Job Scheduler
 Since we are evaluating many different algorithms on large datasets, we often need more compute power than a single machine. The script `start_jobs.py` allows you to run multiple evaluations/algorithms in parallel using either a screen sessions on a single machine, or by submitting jobs to a job scheduler in a high-performance computing cluster, and also automatically writes a job-specific config file and log file. This script ignores the `should_run` flag set in the config file, allowing you to specify which algorithms should be run directly.
 
 If using an anaconda environment, include conda's `activate` command in the `--python` option to load the correct environment when running the jobs.
 
-Example call:
+Example calls:
+
+EXPC LOSO: 
+```
+python start_jobs.py \
+  --config config-files/expc/expc-loso-net-combinations-bp.yaml \
+  --alg fastsinksource --alg genemania \
+  --alg birgrank --alg sinksource --alg localplus \
+  --job-per-dataset --job-per-param \
+  --qsub --cores 3 \
+  --script-to-run run_experiments.py   \
+  --python="source /data/jeff-law/tools/anaconda3/bin/activate mult-sp-pred; python"
+```
+
+EXPC eval COMP:
 ```
 python start_jobs.py \
   --config config-files/expc-eval-comp/expc-eval-comp-net-comb-bp.yaml  \
@@ -97,14 +116,25 @@ python start_jobs.py \
   --job-per-dataset --job-per-param \
   --qsub --cores 3 \
   --script-to-run run_experiments.py \
-  --python="source /data/jeff-law/tools/anaconda3/bin/activate fungcat; python" \
+  --python="source /data/jeff-law/tools/anaconda3/bin/activate mult-sp-pred; python" \
   --pass-to-script --skip-core
 ```
 
 Note that this script is setup to submit jobs to the small, 6 node baobab cluster in the bioinformatics group at Virginia Tech, but it should be easy enough to modify for different compute clusters.
 
+Once the jobs are submitted, you'll notice that 
+
 ### Plot the results
-> TODO add a script to regenerate all of the results and plots.
+To recreate Figure 3a-c of the paper, use this command to make the fmax summary plot for EXPC LOSO:
+```
+python src/annotation_prediction/plot.py \
+  --config config-files/expc/expc-loso-net-combinations-bp.yaml \
+  --line --ci 95 --horiz --for-paper --local-line \
+  --alg fastsinksource --alg genemania --alg birgrank \
+  --alg sinksource --alg async_rw --alg localplus
+```
+
+Then run the same command with the different config files for EXPC eval COMP and EXPC eval ELEC.
 
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
