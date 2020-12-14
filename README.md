@@ -134,7 +134,8 @@ python src/annotation_prediction/plot.py \
   --alg sinksource --alg async_rw --alg localplus
 ```
 
-Then run the same command with the different config files for EXPC eval COMP and EXPC eval ELEC.
+Then run the same command with the different config files for EXPC eval COMP and EXPC eval ELEC. I used inkscape to combine each of the figures after that. Note that to get the y-axis the same for b anc c, I used `--ylim 0.58 0.85`.
+
 
 ## Cite
 If you use FastSinkSource or other methods in this package, please cite:
