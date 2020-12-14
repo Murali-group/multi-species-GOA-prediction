@@ -77,7 +77,7 @@ input_settings:
           taxon_prot_file: "sequences/sp200-uniprot-mapping.tab"
           core_taxons_file: "taxons/expc/expc-bp-taxons.txt"
           target_taxons_file: "taxons/expc/expc-bp-taxons.txt"
-          #sp_leaf_terms_only: True
+          sp_leaf_terms_only: True
           youngs_neg: True
           rem_neg_neighbors: False  
 
