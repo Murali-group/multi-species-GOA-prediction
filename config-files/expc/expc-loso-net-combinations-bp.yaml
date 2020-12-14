@@ -3,7 +3,8 @@ plot_settings:
     #title: "SSN - BP"
     #algs: ["fastsinksource", "genemania", "birgrank", "localplus", "sinksource"]
     title: "spCore EXPC BP\nYoungs neg full - compare network types"
-    exp_type: "loso"
+    loso: True
+    most_specific_terms: True
     #out_pref: "outputs/viz/target-experiments/spCore-expc-bp-Yneg-update-ssn-string-exp-"
     #horizontal: True
     #line: True
