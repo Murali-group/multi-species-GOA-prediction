@@ -124,6 +124,7 @@ def loso_experiments(alg_runners, net_obj, ann_obj, eval_ann_obj, **kwargs):
     # taxons_to_run is the list of taxons to evaluate, which comes from the target_taxons_file if none are passed in via kwargs
     species_names, taxons_to_run = eval_loso.get_selected_species(
         kwargs['species_to_uniprot_idx'], kwargs['target_taxons_file'], kwargs['taxons'])
+    print("%s target taxons from --taxons and 'target_taxons_file' %s" % (len(taxons_to_run), kwargs['target_taxons_file']))
     kwargs['alg_taxon_terms_to_skip'] = eval_loso.get_already_run_terms(alg_runners, **kwargs) 
     kwargs['num_test_cutoff'] = kwargs.get('num_test_cutoff', 10) 
     # keep track of the original to use it later
@@ -134,19 +135,20 @@ def loso_experiments(alg_runners, net_obj, ann_obj, eval_ann_obj, **kwargs):
     # read in the specified taxons from the file
     _, core_taxons = eval_loso.get_selected_species(
         kwargs['species_to_uniprot_idx'], kwargs['core_taxons_file'])
+    print("%s core taxons from 'core_taxons_file' %s" % (len(core_taxons), kwargs['core_taxons_file']))
     core_taxon_prots = get_taxon_prots(
         len(net_obj.nodes), core_taxons, kwargs['species_to_uniprot_idx'])
     core_net_obj, core_ann_obj = limit_to_taxons(core_taxon_prots, net_obj=net_obj, ann_obj=ann_obj, **kwargs)
     # can't print the # nodes and edges here since they can change for SWSN
 
-    # run LOSO on only the core taxons, since we can run non-core species all at the same time
+    # run LOSO on only the core taxons first, since we can run non-core species all at the same time
     core_taxons_to_run = set(taxons_to_run) & set(core_taxons)
     core_taxons_to_run = {t: species_names[t] for t in core_taxons_to_run}
     #core_taxons_to_run = {t: species_names[t] for t in taxons_to_run}
     print("EVAL CORE: %d core taxons, %d for which to run LOSO" % (len(core_taxons), len(core_taxons_to_run)))
 
-    # skip running LOSO on the core
     if kwargs.get('skip_core'):
+        # skip running LOSO on the core
         print("\tSkipping the core taxons because --skip-core was specified")
         params_results = {}
     else:
