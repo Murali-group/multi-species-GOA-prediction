@@ -57,7 +57,7 @@ To generate predictions, `make_predictions.py` extracts the core network from th
 python make_predictions.py --config config-files/expc-core-bp.yaml --num-pred-to-write -1
 ```
 
-If you do not need to specify the core and target species meaning you have already built a network and wish to make predictions for all nodes in the network, you can use the standard `run_eval_algs.py` script in the [annotation_prediction pipeline](https://github.com/Murali-group/annotation_prediction).
+If you do not need to specify the core and target species, meaning you have already built a network and wish to make predictions for all nodes in the network, you can use the standard `run_eval_algs.py` script in the [annotation_prediction pipeline](https://github.com/Murali-group/annotation_prediction).
 
 ```
 python src/annotation_prediction/run_eval_algs.py --config <config_file>
@@ -83,8 +83,8 @@ EXPC eval ELEC:
 python -u run_experiments.py --config config-files/expc-eval-elec/expc-eval-elec-net-comb-bp.yaml --skip-core
 ```
 
-### Use Screen or Job Scheduler
-The script `start_jobs.py` allows you to run multiple evaluations/algorithms in parallel using either a screen sessions on a single machine, or by submitting jobs to a job scheduler, and also automatically writes a job-specific config file and log file. This script ignores the `should_run` flag set in the config file, allowing you to specify which algorithms should be run directly.
+#### Run Using Screen or HPC Job Scheduler
+Since we are evaluating many different algorithms on large datasets, we often need more compute power than a single machine. The script `start_jobs.py` allows you to run multiple evaluations/algorithms in parallel using either a screen sessions on a single machine, or by submitting jobs to a job scheduler in a high-performance computing cluster, and also automatically writes a job-specific config file and log file. This script ignores the `should_run` flag set in the config file, allowing you to specify which algorithms should be run directly.
 
 If using an anaconda environment, include conda's `activate` command in the `--python` option to load the correct environment when running the jobs.
 
@@ -100,6 +100,8 @@ python start_jobs.py \
   --python="source /data/jeff-law/tools/anaconda3/bin/activate fungcat; python" \
   --pass-to-script --skip-core
 ```
+
+Note that this script is setup to submit jobs to the small, 6 node baobab cluster in the bioinformatics group at Virginia Tech, but it should be easy enough to modify for different compute clusters.
 
 ### Plot the results
 > TODO add a script to regenerate all of the results and plots.
